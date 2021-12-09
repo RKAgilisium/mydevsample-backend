@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Template for resume back-end
+
+Parameters:
+  ApplicationName:
+    Description: "Name of application"
+    Type: String
+    Default: "resumebackend"
+
+Resources:
+  MyAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+        Name: !Join ['-',[!Ref ApplicationName,'API']]          
+        StageName: Prod
+        EndpointConfiguration: EDGE
+        Cors:
+            AllowMethods: "'POST, OPTIONS'"
+            AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+            AllowOrigin: "'*'"
+  
+  
+  LambdaFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: code/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Timeout: 300
+      Environment:
+        Variables:
+          tablename: !Ref dynamodbTable
+      Role: !GetAtt 
+        - lambdaRole
+        - Arn
+      Events:
+        Countapi:
+          Type: Api 
+          Properties:
+            Path: /count
+            Method: POST
+            RestApiId: 
+              Ref: MyAPI
+  
+  dynamodbTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: !Ref ApplicationName
+      PrimaryKey:
+        Name: id
+        Type: Number
+
+  lambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: DynamoDB-ReadWrite
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:UpdateItem'
+                Resource: !GetAtt 
+                  - dynamodbTable
+                  - Arn
+                Effect: Allow
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com  
