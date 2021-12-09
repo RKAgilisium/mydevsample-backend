@@ -20,24 +20,4 @@ def use_moto():
                     'AttributeName': 'Id',
                     'KeyType': 'HASH'
                 }
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'Id',
-                    'AttributeType': 'S'
-                }
-            ],
-            BillingMode='PAY_PER_REQUEST'
-        )
-        return dynamodb
-    return dynamodb_client
-
-@mock_dynamodb2
-def test_handler_for_failure(use_moto):
-    use_moto()
-    event = {
-        "id": "test"
-    }
-
-    return_data = app.lambda_handler(event, "")
-    assert return_data['statusCode'] == 500
+            ]
